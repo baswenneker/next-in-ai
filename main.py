@@ -1,9 +1,7 @@
 from next_in_ai.PocketParser import *
-from next_in_ai.OpenAISummarizer import *
 from next_in_ai.BatchSummarizer import *
 
 if __name__ == "__main__":
-    print("test")
     p = PocketParser("https://getpocket.com/users/*sso1456990609615e33/feed/all")
     latest_article_urls = p.new_articles()
 

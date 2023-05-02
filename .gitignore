@@ -1,1 +1,6 @@
 .env
+cache/*
+!cache/.keep
+# but keep cache/.keep
+output/*
+!output/.keep
