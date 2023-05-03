@@ -16,7 +16,7 @@ if openai.api_key is None:
 class OpenAISummarizer:
     def __init__(self, url):
         self.url = url
-        self.content = ""
+        self.content = None
         self.cache_dir = "cache"
 
     def _cache_filename(self):
@@ -51,7 +51,8 @@ class OpenAISummarizer:
             ).text
         except Exception as err:
             print("❌ Couldn't fetch content from {}: {}".format(self.url, err))
-            return None
+            self.content = None
+            return
 
         soup = BeautifulSoup(response_text, "html.parser")
 
@@ -97,6 +98,9 @@ Reply in Dutch.""",
             return cached_summary
 
         self._fetch_content()
+
+        if self.content is None:
+            return f"No content found at {self.url}"
 
         print("⏳ Summarizing the text.")
         response = openai.ChatCompletion.create(

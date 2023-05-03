@@ -1,0 +1,8 @@
+urllib3
+requests
+certifi
+readtime
+python-docx
+python-dotenv
+openai
+beautifulsoup4

@@ -39,7 +39,7 @@ class BatchSummarizer:
 
             # Add the "Lees het volledige artikel" text with hyperlink
             paragraph = document.add_paragraph()
-            text = f"Lees het volledige artikel ({reading_time_minutes} minuten)"
+            text = f"Lees het volledige artikel ({reading_time_minutes} minuten). {url}"
             self._add_hyperlink(paragraph, url, text, "0000FF", True)
 
             document.add_page_break()
