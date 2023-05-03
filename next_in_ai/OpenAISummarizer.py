@@ -37,8 +37,23 @@ class OpenAISummarizer:
             f.write(summary)
 
     def _fetch_content(self):
-        response = requests.get(self.url)
-        soup = BeautifulSoup(response.text, "html.parser")
+        print("🌎 Getting the contents of the url.")
+        HEADERS = {
+            "User-Agent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+        }
+        try:
+            response_text = requests.get(
+                self.url,
+                headers=HEADERS,
+                timeout=10,
+                allow_redirects=True,
+                verify=False,
+            ).text
+        except Exception as err:
+            print("❌ Couldn't fetch content from {}: {}".format(self.url, err))
+            return None
+
+        soup = BeautifulSoup(response_text, "html.parser")
 
         text_elements = soup.find_all(["p", "h1", "h2", "h3"])
         self.content = " ".join([element.get_text() for element in text_elements])
@@ -78,10 +93,12 @@ Reply in Dutch.""",
     def summarize(self):
         cached_summary = self._load_summary_from_cache()
         if cached_summary is not None:
+            print("🤗 Got summary from cache.")
             return cached_summary
 
         self._fetch_content()
 
+        print("⏳ Summarizing the text.")
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=self._prompt(),

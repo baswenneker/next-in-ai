@@ -14,18 +14,24 @@ class BatchSummarizer:
         self.urls = urls
 
     def create_summary_document(self, output_filename=None):
+        print("📄 Creating the summary document")
         document = Document()
         if output_filename is None:
             date_str = datetime.datetime.now().strftime("%Y-%m-%d")
             output_filename = f"output/summaries-{date_str}.docx"
 
         for url in self.urls:
-            print("🌎 Summarizing url: ", url)
+            print("Start with url: ", url)
             summarizer = OpenAISummarizer(url)
             summary = summarizer.summarize()
             first_line = summary.split("\n")[0]  # Get the first line of the summary
-            document.add_heading(f"{first_line}", level=1)
-            document.add_paragraph(summary)
+
+            # Add a heading
+            document.add_heading(f"{first_line}", level=2)
+
+            # Add the summary
+            rest_of_summary = summary.replace(first_line, "").strip()
+            document.add_paragraph(rest_of_summary)
 
             # Calculate reading time
             reading_time = readtime.of_text(summarizer.content)
@@ -38,6 +44,7 @@ class BatchSummarizer:
 
             document.add_page_break()
 
+        print("✅ Writing summaries to file.")
         document.save(output_filename)
 
     def _add_hyperlink(self, paragraph, url, text, color, underline):

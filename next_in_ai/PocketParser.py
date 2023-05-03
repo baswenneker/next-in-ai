@@ -4,20 +4,28 @@ from datetime import datetime, timedelta
 from io import StringIO
 from bs4 import BeautifulSoup
 from datetime import datetime
+import os
+
+requests.packages.urllib3.disable_warnings()
 
 
 class PocketParser:
-    def __init__(self, path):
-        self.path = path
+    def __init__(self):
+        self.path = os.getenv("POCKET_RSS_FEED")
         self.data = None
 
     def _fetch_content(self, path):
         HEADERS = {
             "User-Agent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
         }
-        response = requests.get(path, headers=HEADERS)
-        response.raise_for_status()
-        return response.text
+        try:
+            response = requests.get(
+                path, headers=HEADERS, timeout=10, allow_redirects=True, verify=False
+            )
+            return response.text
+        except Exception as err:
+            print("❌ Couldn't fetch content from {url}: {err}")
+            return None
 
     def _get_last_publish_date(self):
         url = "https://nextinai.beehiiv.com/"
