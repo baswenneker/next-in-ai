@@ -37,8 +37,8 @@ class PocketParser:
         # Find the first time tag and extract the datetime attribute
         time_element = soup.find("time")
         if time_element is not None:
-            date_string = time_element["datetime"]
-            print("date_string", date_string)
+            # get the datetime attribute
+            date_string = time_element.get("datetime")
 
             last_published_date = datetime.strptime(
                 date_string, "%Y-%m-%dT%H:%M:%S.%fZ"
