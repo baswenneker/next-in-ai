@@ -5,8 +5,10 @@ import os
 from dotenv import load_dotenv
 import trafilatura
 
-# Load the .env file
-load_dotenv()
+# Load the .env file# Load the .env file
+if os.getenv("OPENAI_API_KEY") is None:
+    load_dotenv()
+
 # Get the OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if openai.api_key is None:
@@ -130,15 +132,20 @@ This article shows how AI is changing the world.
             return None
 
         print("⏳ Summarizing the text.")
-        response = openai.ChatCompletion.create(
-            model=os.getenv("MODEL", "gpt-3.5-turbo"),
-            messages=self._prompt(),
-            max_tokens=400,
-            temperature=0.7,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-        )
+
+        try:
+            response = openai.ChatCompletion.create(
+                model=os.getenv("MODEL", "gpt-3.5-turbo"),
+                messages=self._prompt(),
+                max_tokens=400,
+                temperature=0.7,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0,
+            )
+        except Exception as err:
+            print(f"{err}\n\n❌ Couldn't summarize the text, probably too long. ")
+            return None
 
         summary = response.choices[0].message["content"]
         self._save_summary_to_cache(summary)

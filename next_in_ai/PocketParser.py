@@ -70,6 +70,9 @@ class PocketParser:
     def _get_articles(self, max_age):
         rss_feed = self._fetch_content(self.path)
 
+        if "Page Not Found" in rss_feed:
+            raise Exception("Could not fetch RSS feed, check your POCKET_RSS_FEED url.")
+
         # Parse the RSS feed
         root = ET.fromstring(rss_feed)
 

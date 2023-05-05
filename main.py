@@ -6,6 +6,6 @@ if __name__ == "__main__":
     load_dotenv()
 
     p = PocketParser()
-    latest_article_urls = p.new_articles()
-    batch_summarizer = BatchSummarizer(latest_article_urls)
+    latest_pocket_urls = p.new_articles_from_days_ago(7)
+    batch_summarizer = BatchSummarizer(latest_pocket_urls)
     batch_summarizer.create_summary_document(debug=False)
