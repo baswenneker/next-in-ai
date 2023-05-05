@@ -25,11 +25,29 @@ class PocketParser:
             )
             return response.text
         except Exception as err:
-            print("❌ Couldn't fetch content from {url}: {err}")
+            print(f"❌ Couldn't fetch content from {path}: {err}")
             return None
 
+    def last_month_articles(self):
+        return self.new_articles_from_days_ago(30)
+
+    def new_articles_from_days_ago(self, days):
+        max_age = datetime.now().replace(tzinfo=pytz.UTC) - timedelta(days=days)
+
+        return self._get_articles(max_age)
+
+    def new_articles(self):
+        # Set the maximum age of the news articles (one week)
+        max_age = self._get_last_publish_date()
+
+        return self._get_articles(max_age)
+
     def _get_last_publish_date(self):
-        url = "https://nextinai.beehiiv.com/"
+        url = os.getenv("BEEHIIV_URL", None)
+
+        if url == "" or url is None:
+            return datetime.now().replace(tzinfo=pytz.UTC) - timedelta(days=7)
+
         html = self._fetch_content(url)
 
         soup = BeautifulSoup(html, "html.parser")
@@ -46,28 +64,8 @@ class PocketParser:
             last_published_date = last_published_date.replace(tzinfo=pytz.UTC)
             return last_published_date
         else:
-            print("Could not find the last published date, using last Thursday.")
-            return self._last_thursday()
-
-    def _last_thursday(self):
-        today = datetime.now().replace(tzinfo=pytz.UTC)
-        days_since_last_thursday = (today.weekday() - 3) % 7
-        last_thursday_datetime = today - timedelta(days=days_since_last_thursday)
-        return last_thursday_datetime
-
-    def last_month_articles(self):
-        return self.new_articles_from_days_ago(30)
-
-    def new_articles_from_days_ago(self, days):
-        max_age = datetime.now().replace(tzinfo=pytz.UTC) - timedelta(days=days)
-
-        return self._get_articles(max_age)
-
-    def new_articles(self):
-        # Set the maximum age of the news articles (one week)
-        max_age = self._get_last_publish_date()
-
-        return self._get_articles(max_age)
+            print("Could not find the last published date, using 7 days ago.")
+            return datetime.now().replace(tzinfo=pytz.UTC) - timedelta(days=7)
 
     def _get_articles(self, max_age):
         rss_feed = self._fetch_content(self.path)
