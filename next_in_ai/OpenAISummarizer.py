@@ -1,9 +1,9 @@
 import requests
 import openai
-from bs4 import BeautifulSoup
 import hashlib
 import os
 from dotenv import load_dotenv
+import trafilatura
 
 # Load the .env file
 load_dotenv()
@@ -14,9 +14,10 @@ if openai.api_key is None:
 
 
 class OpenAISummarizer:
-    def __init__(self, url):
+    def __init__(self, url, disable_cache=False):
         self.url = url
         self.content = None
+        self.disable_cache = disable_cache
         self.cache_dir = "cache"
 
     def _cache_filename(self):
@@ -42,69 +43,95 @@ class OpenAISummarizer:
             "User-Agent": "Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
         }
         try:
-            response_text = requests.get(
-                self.url,
-                headers=HEADERS,
-                timeout=10,
-                allow_redirects=True,
-                verify=False,
-            ).text
+            downloaded = trafilatura.fetch_url(self.url)
+
+            self.content = trafilatura.extract(
+                downloaded, include_comments=False, include_images=False
+            )
+            print(self, self.content)
         except Exception as err:
-            print("❌ Couldn't fetch content from {}: {}".format(self.url, err))
+            self.content = None
+
+        if self.content is None:
+            print("❌ Couldn't fetch content from {}".format(self.url))
+            return
+
+        if "Please complete the security check to access" in self.content:
+            print(
+                "❌ Couldn't fetch content from {}, blocked by Captcha.".format(self.url)
+            )
             self.content = None
             return
 
-        soup = BeautifulSoup(response_text, "html.parser")
-
-        text_elements = soup.find_all(["p", "h1", "h2", "h3"])
-        self.content = " ".join([element.get_text() for element in text_elements])
-
     def _prompt(self):
+        # Get the output language setting from ENV, English = Default
         output_language = os.getenv("OUTPUT_LANGUAGE", "English")
+
+        # Inspired by Jarno Duursma's summary prompt.
         return [
             {
                 "role": "system",
-                "content": "You are an expert in summarizing texts for newsletters. You write in informal language and in the Dutch language.",
+                "content": f"""You are an expert in summarizing blog posts for newsletters.
+                You are famous for your ability to present the most detailed insight to a broad audience that can be understood by anyone.
+                Create an objective summary between 100 and 120 words for a first-year student, capturing the key points and overall message of the text.
+                You write in {output_language}.
+                Ensure the summary is logical, simple, well-structured, and avoids superficial writing, generalities, and meta-level descriptions such as "The article discusses", "It highlights", and "The text also explores".
+                Instead, present the information as if the author of the article is describing it directly to the reader.
+                Include one key quote at the end of the summary.
+                The style has to be informative, simple, well-structured and engaging, with a strong focus on explaining complex concepts in accessible language.
+                """,
             },
             {
                 "role": "user",
-                "content": """Your output should use the following template:
+                "content": """Use the following summary format:
 
 [Emoji] Attention grabbing title here
 
-### Summary
+[Summary here]
 
-### Facts
+- 5 summarizing Bulletpoints with statements from the text
 
-- Bulletpoint
+[Why this text is interesting to read, but don't include things like "This is interesting because..."]
 
-### Why this is interesting
+For example:
 
-Your task is to summarize the text I give you in up to 5 bulletpoints and start with a short and catchy summary. But, start with a title in up to 50 characters starting with a matching emoji and a title that will grab attention (add a space between the emoji and title). Additionally, write down why this is an interesting read for an executive interested in how AI can help business to grow.
+🤖 AI is the new electricity
 
-Reply in Dutch.""",
+AI is the new electricity is what BCG tells people. And the rest of the summary here...
+
+Key points:
+- Bulletpoint 1
+- Bulletpoint 2
+...
+- Bulletpoint 5
+
+This article shows how AI is changing the world.
+
+"This is a quote from the text included at the end of the summary."
+""",
             },
             {
                 "role": "user",
-                "content": f"Summarize the following text in Dutch:\n\n{self.content}",
+                "content": f"Summarize the following text in {output_language}:\n\n{self.content}",
             },
         ]
         return
 
     def summarize(self):
-        cached_summary = self._load_summary_from_cache()
-        if cached_summary is not None:
-            print("🤗 Got summary from cache.")
-            return cached_summary
+        if not self.disable_cache:
+            cached_summary = self._load_summary_from_cache()
+            if cached_summary is not None:
+                print("🤗 Got summary from cache.")
+                return cached_summary
 
         self._fetch_content()
 
         if self.content is None:
-            return f"No content found at {self.url}"
+            return None
 
         print("⏳ Summarizing the text.")
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=os.getenv("MODEL", "gpt-3.5-turbo"),
             messages=self._prompt(),
             max_tokens=400,
             temperature=0.7,

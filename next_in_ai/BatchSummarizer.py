@@ -13,7 +13,7 @@ class BatchSummarizer:
     def __init__(self, urls: List[str]):
         self.urls = urls
 
-    def create_summary_document(self, output_filename=None):
+    def create_summary_document(self, debug=False, output_filename=None):
         print("📄 Creating the summary document")
         document = Document()
         if output_filename is None:
@@ -21,28 +21,40 @@ class BatchSummarizer:
             output_filename = f"output/summaries-{date_str}.docx"
 
         for url in self.urls:
-            print("Start with url: ", url)
+            print("\n\nSummarizing article: ", url)
             summarizer = OpenAISummarizer(url)
             summary = summarizer.summarize()
-            first_line = summary.split("\n")[0]  # Get the first line of the summary
 
-            # Add a heading
-            document.add_heading(f"{first_line}", level=2)
+            if debug:
+                print("--------------------------------------")
+                if summary is None:
+                    print(f"No summary available for {url}")
+                else:
+                    print("Summary: ", summary)
+                print("--------------------------------------")
 
-            # Add the summary
-            rest_of_summary = summary.replace(first_line, "").strip()
-            document.add_paragraph(rest_of_summary)
+            if summary is None:
+                document.add_paragraph(f"❌ No summary available for {url}.\n\n")
+            else:
+                first_line = summary.split("\n")[0]  # Get the first line of the summary
 
-            # Calculate reading time
-            reading_time = readtime.of_text(summarizer.content)
-            reading_time_minutes = reading_time.minutes
+                # Add a heading
+                document.add_heading(f"{first_line}", level=2)
 
-            # Add the "Lees het volledige artikel" text with hyperlink
-            paragraph = document.add_paragraph()
-            text = f"Lees het volledige artikel ({reading_time_minutes} minuten). {url}"
-            self._add_hyperlink(paragraph, url, text, "0000FF", True)
+                # Add the summary
+                rest_of_summary = summary.replace(first_line, "").strip()
+                document.add_paragraph(rest_of_summary)
 
-            document.add_page_break()
+                # Calculate reading time
+                reading_time = readtime.of_text(summarizer.content)
+                reading_time_minutes = reading_time.minutes
+
+                # Add the "Lees het volledige artikel" text with hyperlink
+                paragraph = document.add_paragraph()
+                text = f"Lees het volledige artikel ({reading_time_minutes} minuten).\n\n{url}\n\n"
+                self._add_hyperlink(paragraph, url, text, "0000FF", True)
+
+            # document.add_page_break()
 
         print("✅ Writing summaries to file.")
         document.save(output_filename)
