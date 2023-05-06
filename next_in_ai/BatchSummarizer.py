@@ -34,7 +34,7 @@ class BatchSummarizer:
                 print("--------------------------------------")
 
             if summary is None:
-                document.add_paragraph(f"❌ No summary available for {url}.\n\n")
+                document.add_paragraph(f"\n\n❌ No summary available for {url}.\n\n")
             else:
                 first_line = summary.split("\n")[0]  # Get the first line of the summary
 
