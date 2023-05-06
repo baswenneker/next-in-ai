@@ -18,7 +18,7 @@ class BatchSummarizer:
         document = Document()
         if output_filename is None:
             date_str = datetime.datetime.now().strftime("%Y-%m-%d")
-            output_filename = f"output/summaries-{date_str}.docx"
+            output_filename = f"summaries-{date_str}.docx"
 
         for url in self.urls:
             print("\n\nSummarizing article: ", url)

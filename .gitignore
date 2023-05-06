@@ -4,3 +4,5 @@ cache/*
 # but keep cache/.keep
 output/*
 !output/.keep
+*.docx
+__pycache__
